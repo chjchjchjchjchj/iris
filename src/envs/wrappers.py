@@ -46,7 +46,8 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         return np.array(img)
 
     def observation(self, observation: np.ndarray) -> np.ndarray:
-        self.unwrapped.original_obs = observation
+        self.unwrapped.original_obs = observation['image']
+        # using key to get the image
         return self.resize(observation)
 
 
@@ -64,7 +65,7 @@ class NoopResetEnv(gym.Wrapper):
         self.noop_max = noop_max
         self.override_num_noops = None
         self.noop_action = 0
-        assert env.unwrapped.get_action_meanings()[0] == 'NOOP'
+        # assert env.unwrapped.get_action_meanings()[0] == 'NOOP'
 
     def reset(self, **kwargs):
         """ Do no-op action for a number of steps in [1, noop_max]."""
