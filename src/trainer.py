@@ -67,6 +67,7 @@ class Trainer:
             return MultiProcessEnv(env_fn, num_envs, should_wait_num_envs_ratio=1.0) if num_envs > 1 else SingleProcessEnv(env_fn)
 
         if self.cfg.training.should:
+            print("--- training  on the ", cfg.env.train)
             train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
             self.train_dataset = instantiate(cfg.datasets.train)
             self.train_collector = Collector(train_env, self.train_dataset, episode_manager_train)
