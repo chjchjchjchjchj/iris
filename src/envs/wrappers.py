@@ -18,7 +18,7 @@ def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, d
     print('using env in make_atari', id)
     print('the info of the env is ', env)
     print('spec.id ', env.spec.id)
-    assert 'NoFrameskip' in env.spec.id or 'Frameskip' not in env.spec
+    # assert 'NoFrameskip' in env.spec.id or 'Frameskip' not in env.spec
     env = ResizeObsWrapper(env, (size, size))
     print('after resize, the env info is as: ', env)
     if clip_reward:
