@@ -7,10 +7,14 @@ from typing import Tuple
 import gym
 import numpy as np
 from PIL import Image
+import homegrid
 
 
 def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, done_on_life_loss=False, clip_reward=False):
-    env = gym.make(id)
+    if id == "homegrid-task":
+        env = gym.make(id)
+    else:
+        env = gym.make(id)
     print('using env in make_atari', id)
     print('the info of the env is ', env)
     assert 'NoFrameskip' in env.spec.id or 'Frameskip' not in env.spec
