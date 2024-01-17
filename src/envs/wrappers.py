@@ -73,11 +73,17 @@ class NoopResetEnv(gym.Wrapper):
         if self.override_num_noops is not None:
             noops = self.override_num_noops
         else:
-            noops = self.unwrapped.np_random.randint(1, self.noop_max + 1)
+            noops = self.unwrapped.np_random.integers(1, self.noop_max + 1)
         assert noops > 0
         obs = None
         for _ in range(noops):
-            obs, _, done, _ = self.env.step(self.noop_action)
+            tmp = self.env.step(self.noop_action)
+            print(tmp)
+            for i in tmp:
+                print('-------')
+                print(i)
+            print(len(tmp), '------------------')
+            obs, _, done, _, _ = tmp
             if done:
                 obs = self.env.reset(**kwargs)
         return obs
@@ -100,13 +106,13 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.was_real_done = done
         # check current lives, make loss of life terminal,
         # then update lives to handle bonus lives
-        lives = self.env.unwrapped.ale.lives()
-        if lives < self.lives and lives > 0:
+        # lives = self.env.unwrapped.ale.lives()
+        # if lives < self.lives and lives > 0:
             # for Qbert sometimes we stay in lives == 0 condition for a few frames
             # so it's important to keep lives > 0, so that we only reset once
             # the environment advertises done.
-            done = True
-        self.lives = lives
+            # done = True
+        # self.lives = lives
         return obs, reward, done, info
 
     def reset(self, **kwargs):
@@ -118,8 +124,9 @@ class EpisodicLifeEnv(gym.Wrapper):
             obs = self.env.reset(**kwargs)
         else:
             # no-op step to advance from terminal/lost life state
-            obs, _, _, _ = self.env.step(0)
-        self.lives = self.env.unwrapped.ale.lives()
+            obs, _, _, _, _= self.env.step(0)
+        # self.lives = self.env.unwrapped.ale.lives()
+        # self.lives = self.env.unwrapped
         return obs
 
 
@@ -138,7 +145,7 @@ class MaxAndSkipEnv(gym.Wrapper):
         total_reward = 0.0
         done = None
         for i in range(self._skip):
-            obs, reward, done, info = self.env.step(action)
+            obs, reward, done,_, info = self.env.step(action)
             if i == self._skip - 2:
                 self._obs_buffer[0] = obs
             if i == self._skip - 1:
