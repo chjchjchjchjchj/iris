@@ -62,7 +62,7 @@ class Tokenizer(nn.Module):
     def encode(self, x: torch.Tensor, should_preprocess: bool = False) -> TokenizerEncoderOutput:
         if should_preprocess:
             x = self.preprocess_input(x)
-        shape = x.shape  # (..., C, H, W)
+        shape = x.shape  # (..., C, H, ·W)
         x = x.view(-1, *shape[-3:])
         z = self.encoder(x)
         z = self.pre_quant_conv(z)
@@ -77,7 +77,7 @@ class Tokenizer(nn.Module):
         z = z.reshape(*shape[:-3], *z.shape[1:])
         z_q = z_q.reshape(*shape[:-3], *z_q.shape[1:])
         tokens = tokens.reshape(*shape[:-3], -1)
-
+        print('before tokens the shape is ', shape, 'after it ', tokens.shape)
         return TokenizerEncoderOutput(z, z_q, tokens)
 
     def decode(self, z_q: torch.Tensor, should_postprocess: bool = False) -> torch.Tensor:
@@ -93,6 +93,7 @@ class Tokenizer(nn.Module):
     @torch.no_grad()
     def encode_decode(self, x: torch.Tensor, should_preprocess: bool = False, should_postprocess: bool = False) -> torch.Tensor:
         z_q = self.encode(x, should_preprocess).z_quantized
+        print('z_q.shape ',z_q.shape)
         return self.decode(z_q, should_postprocess)
 
     def preprocess_input(self, x: torch.Tensor) -> torch.Tensor:

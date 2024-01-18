@@ -11,6 +11,7 @@ import homegrid
 
 
 def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, done_on_life_loss=False, clip_reward=False):
+    print('id', id)
     if id == "homegrid-task":
         env = gym.make(id)
     else:
@@ -39,14 +40,19 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         self.size = tuple(size)
         self.observation_space = gym.spaces.Box(low=0, high=255, shape=(size[0], size[1], 3), dtype=np.uint8)
         self.unwrapped.original_obs = None
+        self.unwrapped.original_token = None
 
     def resize(self, obs: np.ndarray):
-        img = Image.fromarray(obs)
+        if isinstance(obs, dict):
+            obs_t = obs['image']
+        img = Image.fromarray(obs_t)
         img = img.resize(self.size, Image.BILINEAR)
+        # return {'image':np.array(img),  'token': obs['token']}
         return np.array(img)
-
     def observation(self, observation: np.ndarray) -> np.ndarray:
         self.unwrapped.original_obs = observation['image']
+        self.unwrapped.original_token = observation['token']
+        # print('---- used observation')
         # using key to get the image
         return self.resize(observation)
 
@@ -78,12 +84,13 @@ class NoopResetEnv(gym.Wrapper):
         obs = None
         for _ in range(noops):
             tmp = self.env.step(self.noop_action)
-            print(tmp)
-            for i in tmp:
-                print('-------')
-                print(i)
-            print(len(tmp), '------------------')
-            obs, _, done, _, _ = tmp
+            # print(tmp)
+            # for i in tmp:
+            #     print('-------')
+            #     print(i)
+            # print(len(tmp), '------------------')
+            obs, _, done, trun, _ = tmp
+            done = done or trun
             if done:
                 obs = self.env.reset(**kwargs)
         return obs
@@ -145,7 +152,8 @@ class MaxAndSkipEnv(gym.Wrapper):
         total_reward = 0.0
         done = None
         for i in range(self._skip):
-            obs, reward, done,_, info = self.env.step(action)
+            obs, reward, done,trun, info = self.env.step(action)
+            done = done or trun
             if i == self._skip - 2:
                 self._obs_buffer[0] = obs
             if i == self._skip - 1:

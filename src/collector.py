@@ -47,10 +47,11 @@ class Collector:
 
         agent.actor_critic.reset(n=self.env.num_envs, burnin_observations=burnin_obs_rec, mask_padding=mask_padding)
         pbar = tqdm(total=num_steps if num_steps is not None else num_episodes, desc=f'Experience collection ({self.dataset.name})', file=sys.stdout)
-
+        # print('total ', num_steps , num_episodes)
         while not should_stop(steps, episodes):
 
             observations.append(self.obs)
+            print('in collector self.obs', self.obs.shape)
             obs = rearrange(torch.FloatTensor(self.obs).div(255), 'n h w c -> n c h w').to(agent.device)
             act = agent.act(obs, should_sample=should_sample, temperature=temperature).cpu().numpy()
 
@@ -58,19 +59,22 @@ class Collector:
                 act = self.heuristic.act(obs).cpu().numpy()
 
             self.obs, reward, done, _ = self.env.step(act)
-
+            # print(self.env.unwrapped_)
+            print('token: ', self.env.env.unwrapped.original_token)
+            # print(dir(self.env.env.env.env.unwrapped))
             actions.append(act)
             rewards.append(reward)
             dones.append(done)
-
+            # print(done)
             new_steps = len(self.env.mask_new_dones)
             steps += new_steps
+            # print(steps, new_steps)
             pbar.update(new_steps if num_steps is not None else 0)
 
             # Warning: with EpisodicLifeEnv + MultiProcessEnv, reset is ignored if not a real done.
             # Thus, segments of experience following a life loss and preceding a general done are discarded.
             # Not a problem with a SingleProcessEnv.
-
+            # print('self.env.should_reset', self.env.should_reset())
             if self.env.should_reset():
                 self.add_experience_to_dataset(observations, actions, rewards, dones)
 

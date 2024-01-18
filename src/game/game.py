@@ -13,7 +13,8 @@ from utils import make_video
 
 
 class Game:
-    def __init__(self, env: Union[gym.Env, WorldModelEnv], keymap_name: str, size: Tuple[int, int], fps: int, verbose: bool, record_mode: bool) -> None:
+    def __init__(self, env: Union[gym.Env, WorldModelEnv], keymap_name: str, size: Tuple[int, int], fps: int,
+                 verbose: bool, record_mode: bool) -> None:
         self.env = env
         self.height, self.width = size
         self.fps = fps
@@ -26,12 +27,14 @@ class Game:
         print('Actions:')
         for key, idx in self.keymap.items():
             print(f'{pygame.key.name(key)}: {self.action_names[idx]}')
+        print(self.action_names)
 
     def run(self) -> None:
         pygame.init()
 
         header_height = 100 if self.verbose else 0
         font_size = 24
+        print('------------', f'self.width {self.width} self.height{self.height}')
         screen = pygame.display.set_mode((self.width, self.height + header_height))
         clock = pygame.time.Clock()
         font = pygame.font.SysFont(None, font_size)
@@ -51,7 +54,8 @@ class Game:
                 image = Image.fromarray(image)
             else:
                 assert isinstance(image, Image.Image)
-            pygame_image = np.array(image.resize((self.width, self.height), resample=Image.NEAREST)).transpose((1, 0, 2))
+            pygame_image = np.array(image.resize((self.width, self.height), resample=Image.NEAREST)).transpose(
+                (1, 0, 2))
             surface = pygame.surfarray.make_surface(pygame_image)
             screen.blit(surface, (0, header_height))
 
@@ -61,7 +65,7 @@ class Game:
         else:
             self.env.reset()
             img = self.env.render()
-        
+
         draw_game(img)
 
         clear_header()
@@ -73,7 +77,7 @@ class Game:
 
         do_reset, do_wait = False, False
         should_stop = False
-        
+
         while not should_stop:
 
             action = 0  # noop
@@ -88,11 +92,11 @@ class Game:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_PERIOD:
                     do_wait = not do_wait
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_COMMA:
-                    if not recording: 
+                    if not recording:
                         recording = True
                         print('Started recording.')
                     else:
-                        print('Stopped recording.')    
+                        print('Stopped recording.')
                         self.save_recording(np.stack(segment_buffer))
                         recording = False
                         segment_buffer = []
@@ -118,9 +122,10 @@ class Game:
 
             if self.record_mode:
                 episode_buffer.append(np.array(img))
-
+            print('verbose? ', self.verbose)
             if self.verbose:
                 clear_header()
+                print(f'Action: {self.action_names[action]}')
                 draw_text(f'Action: {self.action_names[action]}', idx_line=0)
                 draw_text(f'Reward: {reward if isinstance(reward, float) else reward.item(): .2f}', idx_line=1)
                 draw_text(f'Done: {done}', idx_line=2)
@@ -129,8 +134,8 @@ class Game:
                     for i, (k, v) in enumerate(info.items()):
                         draw_text(f'{k}: {v}', idx_line=i, idx_column=1)
 
-            pygame.display.flip()   # update screen
-            clock.tick(self.fps)    # ensures game maintains the given frame rate
+            pygame.display.flip()  # update screen
+            clock.tick(self.fps)  # ensures game maintains the given frame rate
 
             if do_reset or done:
                 self.env.reset()
@@ -147,5 +152,5 @@ class Game:
         self.record_dir.mkdir(exist_ok=True, parents=True)
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         np.save(self.record_dir / timestamp, frames)
-        make_video(self.record_dir / f'{timestamp}.mp4', fps=15, frames=frames)
+        make_video(self.record_dir / f'{timestamp}.mp4', fps=4, frames=frames)
         print(f'Saved recording {timestamp}.')
