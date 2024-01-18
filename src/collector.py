@@ -51,8 +51,9 @@ class Collector:
         while not should_stop(steps, episodes):
 
             observations.append(self.obs)
-            print('in collector self.obs', self.obs.shape)
-            obs = rearrange(torch.FloatTensor(self.obs).div(255), 'n h w c -> n c h w').to(agent.device)
+            # print('in collector self.obs', self.obs.shape)
+            img = rearrange(torch.FloatTensor(self.obs['image']).div(255), 'n h w c -> n c h w').to(agent.device)
+            obs = {'image':img, 'token':self.obs['token']}
             act = agent.act(obs, should_sample=should_sample, temperature=temperature).cpu().numpy()
 
             if random.random() < epsilon:
@@ -113,11 +114,22 @@ class Collector:
 
         return to_log
 
-    def add_experience_to_dataset(self, observations: List[np.ndarray], actions: List[np.ndarray], rewards: List[np.ndarray], dones: List[np.ndarray]) -> None:
+    def add_experience_to_dataset(self, observations: List[dict], actions: List[np.ndarray], rewards: List[np.ndarray], dones: List[np.ndarray]) -> None:
         assert len(observations) == len(actions) == len(rewards) == len(dones)
-        for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
+        # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
+        # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
+        for i,(o, a, r, d) in enumerate(zip(observations, actions, rewards, dones)):
+            a = np.swapaxes(actions, 0, 1)
+            r = np.swapaxes(rewards, 0, 1)
+            d = np.swapaxes(dones, 0, 1)
+            oo = o['image']
+            oo = np.swapaxes(oo, 0, 1)
+            oo = torch.ByteTensor(oo).permute(0, 3, 1, 2).contiguous()
+            o['image'] = oo
+
+
             episode = Episode(
-                observations=torch.ByteTensor(o).permute(0, 3, 1, 2).contiguous(),  # channel-first
+                observations=o,  # channel-first
                 actions=torch.LongTensor(a),
                 rewards=torch.FloatTensor(r),
                 ends=torch.LongTensor(d),

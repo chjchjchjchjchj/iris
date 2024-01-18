@@ -28,7 +28,7 @@ def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, d
         env = gym.wrappers.TimeLimit(env, max_episode_steps=max_episode_steps)
     if noop_max is not None:
         env = NoopResetEnv(env, noop_max=noop_max)
-    env = MaxAndSkipEnv(env, skip=frame_skip)
+    # env = MaxAndSkipEnv(env, skip=frame_skip) # todo wrong delete
     if done_on_life_loss:
         env = EpisodicLifeEnv(env)
     return env
@@ -54,8 +54,8 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         self.unwrapped.original_token = observation['token']
         # print('---- used observation')
         # using key to get the image
-        # return {'image': self.resize(observation), 'token':observation['token']}
-        return self.resize(observation)
+        return {'image': self.resize(observation), 'token':observation['token']}
+        # return self.resize(observation)
 
 class RewardClippingWrapper(gym.RewardWrapper):
     def reward(self, reward):
@@ -109,7 +109,12 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.was_real_done = True
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
+        # tmp = self.env.step(action)
+        # for i in tmp:
+        #     print(tmp)
+        # print('tmp_len', len(tmp))
+        obs, reward, done, trun,  info = self.env.step(action)
+        done = trun or done
         self.was_real_done = done
         # check current lives, make loss of life terminal,
         # then update lives to handle bonus lives
@@ -144,6 +149,9 @@ class MaxAndSkipEnv(gym.Wrapper):
         assert skip > 0
         # most recent raw observations (for max pooling across time steps)
         self._obs_buffer = np.zeros((2,) + env.observation_space.shape, dtype=np.uint8)
+        # print('self._obs_buffer ', self._obs_buffer.shape)
+        # print('env.observation_space.shape', env.observation_space.shape)
+        self._obs_token_buffer = [None, None]
         self._skip = skip
         self.max_frame = np.zeros(env.observation_space.shape, dtype=np.uint8)
 
@@ -155,17 +163,20 @@ class MaxAndSkipEnv(gym.Wrapper):
             obs, reward, done,trun, info = self.env.step(action)
             done = done or trun
             if i == self._skip - 2:
-                self._obs_buffer[0] = obs
+                self._obs_buffer[0] = obs['image']
+                self._obs_token_buffer[0] = obs['token']
             if i == self._skip - 1:
-                self._obs_buffer[1] = obs
+                self._obs_buffer[1] = obs['image']
+                self._obs_token_buffer[1] = obs['token']
             total_reward += reward
             if done:
                 break
         # Note that the observation on the done=True frame
         # doesn't matter
-        self.max_frame = self._obs_buffer.max(axis=0)
-
-        return self.max_frame, total_reward, done, info
+        # self.max_frame = self._obs_buffer.max(axis=0)
+        indices = np.argmax(self._obs_buffer, axis=0)
+        print(indices)
+        return {'image': self._obs_buffer[indices], 'token':self._obs_token_buffer[indices]}, total_reward, done, info
 
     def reset(self, **kwargs):
         return self.env.reset(**kwargs)

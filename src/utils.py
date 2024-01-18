@@ -138,6 +138,7 @@ class RandomHeuristic:
         self.num_actions = num_actions
 
     def act(self, obs):
+        obs = obs['image']
         assert obs.ndim == 4  # (N, H, W, C)
         n = obs.size(0)
         return torch.randint(low=0, high=self.num_actions, size=(n,))
