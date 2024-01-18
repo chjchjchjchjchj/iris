@@ -54,8 +54,8 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         self.unwrapped.original_token = observation['token']
         # print('---- used observation')
         # using key to get the image
+        # return {'image': self.resize(observation), 'token':observation['token']}
         return self.resize(observation)
-
 
 class RewardClippingWrapper(gym.RewardWrapper):
     def reward(self, reward):
