@@ -82,8 +82,16 @@ class EpisodesDataset:
         episodes_segments = [e_s.__dict__ for e_s in episodes_segments]
         batch = {}
         for k in episodes_segments[0]:
+            if k == "observations":
+                bat_img = torch.stack([e_s[k]['image'].float()/255.0 for e_s in episodes_segments])
+                bat_tok = torch.stack([e_s[k]['token'] for e_s in episodes_segments])
+
+                #     bat_tok = torch.stack([e_s[k]['token'] for e_s in episodes_segments])
+                # RuntimeError: stack expects each tensor to be equal size, but got [1] at entry 0 and [0] at entry 1
+                batch[k] = {'image': bat_img, 'token': bat_tok}
+                continue
             batch[k] = torch.stack([e_s[k] for e_s in episodes_segments])
-        batch['observations'] = batch['observations'].float() / 255.0  # int8 to float and scale
+        # batch['observations'] = batch['observations'].float() / 255.0  # int8 to float and scale
         return batch
 
     def traverse(self, batch_num_samples: int, chunk_size: int):

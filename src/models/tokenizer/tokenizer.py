@@ -60,7 +60,9 @@ class Tokenizer(nn.Module):
         return LossWithIntermediateLosses(commitment_loss=commitment_loss, reconstruction_loss=reconstruction_loss, perceptual_loss=perceptual_loss)
 
     def encode(self, x: torch.Tensor, should_preprocess: bool = False) -> TokenizerEncoderOutput:
+        # print(type(x))
         x_t = x['token']
+        # print(x.shape)
         x = x['image']
         if should_preprocess:
             x = self.preprocess_input(x)

@@ -42,7 +42,12 @@ class Collector:
             current_episodes = [self.dataset.get_episode(episode_id) for episode_id in self.episode_ids]
             segmented_episodes = [episode.segment(start=len(episode) - burn_in, stop=len(episode), should_pad=True) for episode in current_episodes]
             mask_padding = torch.stack([episode.mask_padding for episode in segmented_episodes], dim=0).to(agent.device)
-            burnin_obs = torch.stack([episode.observations for episode in segmented_episodes], dim=0).float().div(255).to(agent.device)
+            # burnin_obs = torch.stack([episode.observations['image'] for episode in segmented_episodes], dim=0).float().div(255).to(agent.device)
+            burnin_obs_image = torch.stack([episode.observations['image'] for episode in segmented_episodes],
+                                           dim=0).float().div(255).to(agent.device)
+            burnin_obs_token = torch.stack([episode.observations['token'] for episode in segmented_episodes], dim=0).to(
+                agent.device)
+            burnin_obs = {'image': burnin_obs_image, 'token': burnin_obs_token}
             burnin_obs_rec = torch.clamp(agent.tokenizer.encode_decode(burnin_obs, should_preprocess=True, should_postprocess=True), 0, 1)
 
         agent.actor_critic.reset(n=self.env.num_envs, burnin_observations=burnin_obs_rec, mask_padding=mask_padding)
@@ -119,20 +124,33 @@ class Collector:
         assert len(observations) == len(actions) == len(rewards) == len(dones)
         # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
         # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
-        for i,(o, a, r, d) in enumerate(zip(observations, actions, rewards, dones)):
+        # tt = []
+        # for i in observations:
+        #     obs.append({'image': np.swapaxes(i['image'], 0, 1), 'token': i['token']})
+        obs_img = [i['image'] for i in observations]
+        obs_token = [i['token'] for i in observations]
+
+        # obs_img = np.swapaxes(obs_img, 0, 1)
+        # obs_token = np.swapaxes(obs_token, 0, 1)
+        obs_img = np.array(obs_img)
+        obs_token = np.array(obs_token)
+        tt = (obs_img, obs_token,*map(lambda arr: np.swapaxes(arr, 0, 1), [actions, rewards, dones]))
+        # print('tt', tt )
+        for i, (img ,tok, a, r, d) in enumerate(zip(*tt)):
             print(i)
-            continue
-            a = np.swapaxes(actions, 0, 1)
-            r = np.swapaxes(rewards, 0, 1)
-            d = np.swapaxes(dones, 0, 1)
-            oo = o['image']
-            oo = np.swapaxes(oo, 0, 1)
-            oo = torch.ByteTensor(oo).permute(0, 3, 1, 2).contiguous()
-            o['image'] = oo
+            # o = item[0]
+            # a = item[1]
+            # r = item[2]
+            # d = item[3]
+            # oo = o['image']
+            # oo = np.swapaxes(oo, 0, 1)
+            img = torch.ByteTensor(img).permute(0, 3, 1, 2).contiguous()
+            # o['image'] = oo
+            tok = torch.LongTensor(tok)
 
 
             episode = Episode(
-                observations=o,  # channel-first
+                observations={'image':img, 'token':tok},  # channel-first
                 actions=torch.LongTensor(a),
                 rewards=torch.FloatTensor(r),
                 ends=torch.LongTensor(d),

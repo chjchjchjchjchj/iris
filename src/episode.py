@@ -24,7 +24,7 @@ class Episode:
         assert len(self.actions) == len(self.rewards) == len(self.ends) == len(self.mask_padding)
         if self.ends.sum() > 0:
             idx_end = torch.argmax(self.ends) + 1
-            self.observations = {'image': self.observations['image'][:idx_end], 'token':self.observations['token']}
+            self.observations = {'image': self.observations['image'][:idx_end], 'token':self.observations['token'][:idx_end]}
             self.actions = self.actions[:idx_end]
             self.rewards = self.rewards[:idx_end]
             self.ends = self.ends[:idx_end]
@@ -35,7 +35,7 @@ class Episode:
 
     def merge(self, other: Episode) -> Episode:
         return Episode(
-            torch.cat((self.observations, other.observations), dim=0),
+            {'image': torch.cat((self.observations['image'], other.observations['image']), dim=0), 'token':torch.cat((self.observations['token'], other.observations['token']), dim=0)},
             torch.cat((self.actions, other.actions), dim=0),
             torch.cat((self.rewards, other.rewards), dim=0),
             torch.cat((self.ends, other.ends), dim=0),
@@ -48,14 +48,24 @@ class Episode:
         padding_length_left = max(0, -start)
         assert padding_length_right == padding_length_left == 0 or should_pad
 
+        def pad_dict(x_dict):
+            padded_dict = {}
+            for key, value in x_dict.items():
+                padded_value = torch.nn.functional.pad(value, [0 for _ in range(2 * value.ndim - 1)] + [
+                    padding_length_right]) if padding_length_right > 0 else value
+                padded_dict[key] = torch.nn.functional.pad(padded_value, [0 for _ in range(2 * value.ndim - 2)] + [
+                    padding_length_left, 0]) if padding_length_left > 0 else padded_value
+            return padded_dict
         def pad(x):
+            if isinstance(x, dict):
+                return pad_dict(x)
             pad_right = torch.nn.functional.pad(x, [0 for _ in range(2 * x.ndim - 1)] + [padding_length_right]) if padding_length_right > 0 else x
             return torch.nn.functional.pad(pad_right, [0 for _ in range(2 * x.ndim - 2)] + [padding_length_left, 0]) if padding_length_left > 0 else pad_right
 
         start = max(0, start)
         stop = min(len(self), stop)
         segment = Episode(
-            self.observations[start:stop],
+            {'image':self.observations['image'][start:stop], 'token':self.observations['token'][start:stop]},
             self.actions[start:stop],
             self.rewards[start:stop],
             self.ends[start:stop],
