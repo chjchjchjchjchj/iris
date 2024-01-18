@@ -20,17 +20,18 @@ class Episode:
     mask_padding: torch.BoolTensor
 
     def __post_init__(self):
-        assert len(self.observations) == len(self.actions) == len(self.rewards) == len(self.ends) == len(self.mask_padding)
+        print('!!!!!!!',len(self.observations), len(self.rewards), len(self.actions), len(self.ends),len(self.mask_padding))
+        assert len(self.actions) == len(self.rewards) == len(self.ends) == len(self.mask_padding)
         if self.ends.sum() > 0:
             idx_end = torch.argmax(self.ends) + 1
-            self.observations = self.observations[:idx_end]
+            self.observations = {'image': self.observations['image'][:idx_end], 'token':self.observations['token']}
             self.actions = self.actions[:idx_end]
             self.rewards = self.rewards[:idx_end]
             self.ends = self.ends[:idx_end]
             self.mask_padding = self.mask_padding[:idx_end]
 
     def __len__(self) -> int:
-        return self.observations.size(0)
+        return self.observations['image'].size(0)
 
     def merge(self, other: Episode) -> Episode:
         return Episode(
