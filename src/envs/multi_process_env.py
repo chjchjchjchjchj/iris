@@ -37,8 +37,11 @@ def child_env(child_id: int, env_fn: Callable, child_conn: Connection) -> None:
         elif message_type == MessageType.STEP:
             tmp = env.step(content)
             # print('env.step ', tmp)
-            obs, rew, done,trun , _ = tmp
-            done = trun  or done
+            if len(tmp) == 5:
+                obs, rew, done,trun , _ = tmp
+                done = trun  or done
+            else:
+                obs, rew, done, _ = tmp
             if done:
                 obs = env.reset()
             child_conn.send(Message(MessageType.STEP_RETURN, (obs, rew, done, None)))

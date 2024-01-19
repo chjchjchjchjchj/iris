@@ -31,7 +31,7 @@ common:
 
 collection:
   train:
-    num_envs: 1
+    num_envs: 2
     stop_after_epochs: 500
     num_episodes_to_save: 10
     config:
