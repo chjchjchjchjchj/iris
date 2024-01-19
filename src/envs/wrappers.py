@@ -11,17 +11,17 @@ import homegrid
 
 
 def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, done_on_life_loss=False, clip_reward=False):
-    print('id', id)
+    # print('id', id)
     if id == "homegrid-task":
         env = gym.make(id)
     else:
         env = gym.make(id)
-    print('using env in make_atari', id)
-    print('the info of the env is ', env)
-    print('spec.id ', env.spec.id)
+    # print('using env in make_atari', id)
+    # print('the info of the env is ', env)
+    # print('spec.id ', env.spec.id)
     # assert 'NoFrameskip' in env.spec.id or 'Frameskip' not in env.spec
     env = ResizeObsWrapper(env, (size, size))
-    print('after resize, the env info is as: ', env)
+    # print('after resize, the env info is as: ', env)
     if clip_reward:
         env = RewardClippingWrapper(env)
     if max_episode_steps is not None:
@@ -175,7 +175,7 @@ class MaxAndSkipEnv(gym.Wrapper):
         # doesn't matter
         # self.max_frame = self._obs_buffer.max(axis=0)
         indices = np.argmax(self._obs_buffer, axis=0)
-        print(indices)
+        # print(indices)
         return {'image': self._obs_buffer[indices], 'token':self._obs_token_buffer[indices]}, total_reward, done, info
 
     def reset(self, **kwargs):

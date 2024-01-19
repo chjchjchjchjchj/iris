@@ -19,6 +19,7 @@ class EpisodesDataset:
         self.num_seen_episodes = 0
         self.episodes = deque()
         self.episode_id_to_queue_idx = dict()
+        self.token_shape= None
         self.newly_modified_episodes, self.newly_deleted_episodes = set(), set()
 
     def __len__(self) -> int:
@@ -81,11 +82,12 @@ class EpisodesDataset:
     def _collate_episodes_segments(self, episodes_segments: List[Episode]) -> Batch:
         episodes_segments = [e_s.__dict__ for e_s in episodes_segments]
         batch = {}
+        shape = episodes_segments[0]['actions'].shape
         for k in episodes_segments[0]:
             if k == "observations":
                 bat_img = torch.stack([e_s[k]['image'].float()/255.0 for e_s in episodes_segments])
                 # print()
-                bat_tok = torch.stack([torch.tensor(e_s[k]['token']) if len(e_s[k]['token']) != 0 else torch.tensor([1]) for e_s in episodes_segments])
+                bat_tok = torch.stack([torch.tensor(e_s[k]['token']) if len(e_s[k]['token']) == shape else torch.zeros(shape) for e_s in episodes_segments])
 
                 # todo the tok sometimes become Tensor(0,)
                 #     bat_tok = torch.stack([e_s[k]['token'] for e_s in episodes_segments])

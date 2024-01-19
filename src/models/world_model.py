@@ -79,7 +79,7 @@ class WorldModel(nn.Module):
         return "world_model"
 
     def forward(self, tokens: torch.LongTensor, past_keys_values: Optional[KeysValues] = None) -> WorldModelOutput:
-        print('in world model, the token shape is ', tokens.shape)
+        # print('in world model, the token shape is ', tokens.shape)
         num_steps = tokens.size(1)  # (B, T)
         assert num_steps <= self.config.max_tokens
         prev_steps = 0 if past_keys_values is None else past_keys_values.size
@@ -95,12 +95,13 @@ class WorldModel(nn.Module):
         return WorldModelOutput(x, logits_observations, logits_rewards, logits_ends)
 
     def compute_loss(self, batch: Batch, tokenizer: Tokenizer, **kwargs: Any) -> LossWithIntermediateLosses:
-        print(batch['observations'].shape)
+        # print(batch['observations'].shape)
         with torch.no_grad():
-            obs_tokens = tokenizer.encode(batch['observations'], should_preprocess=True).tokens  # (BL, K)
-        print('obs_tokens : ', obs_tokens.shape)
+            obs_tokens = tokenizer.encode(batch['observations']['image'], should_preprocess=True).tokens  # (BL, K)
+        # print('obs_tokens : ', obs_tokens.shape)
         act_tokens = rearrange(batch['actions'], 'b l -> b l 1')
-        tokens = rearrange(torch.cat((obs_tokens, act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
+        # task_tokens = rearrange(batch['observations']['token'], 'b l -> b l 1')
+        tokens = rearrange(torch.cat((obs_tokens,  act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
         # todo 103 add the language tokens here
         outputs = self(tokens)
 
