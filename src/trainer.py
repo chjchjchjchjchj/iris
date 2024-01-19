@@ -277,7 +277,15 @@ class Trainer:
         print(f'Successfully loaded model, optimizer and {len(self.train_dataset)} episodes from {self.ckpt_dir.absolute()}.')
 
     def _to_device(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        return {k: batch[k].to(self.device) for k in batch}
+        tmp = {}
+        for k,v in batch.items():
+            if k == 'observations':
+                obs_img = v['image'].to(self.device)
+                obs_tok = v['token'].to(self.device)
+                tmp[k] = {'image':obs_img, 'token':obs_tok}
+                continue
+            tmp[k] = v.to(self.device)
+        return tmp
 
     def finish(self) -> None:
         wandb.finish()

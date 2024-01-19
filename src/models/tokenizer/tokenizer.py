@@ -45,7 +45,9 @@ class Tokenizer(nn.Module):
 
     def compute_loss(self, batch: Batch, **kwargs: Any) -> LossWithIntermediateLosses:
         assert self.lpips is not None
-        observations = self.preprocess_input(rearrange(batch['observations'], 'b t c h w -> (b t) c h w'))
+        img = batch['observations']['image']
+        tok = batch['observations']['token']
+        observations = self.preprocess_input(rearrange(img, 'b t c h w -> (b t) c h w'))
         z, z_quantized, reconstructions = self(observations, should_preprocess=False, should_postprocess=False)
 
         # Codebook loss. Notes:
@@ -61,9 +63,14 @@ class Tokenizer(nn.Module):
 
     def encode(self, x: torch.Tensor, should_preprocess: bool = False) -> TokenizerEncoderOutput:
         # print(type(x))
-        x_t = x['token']
+        # x_t = x['token']
         # print(x.shape)
-        x = x['image']
+        if isinstance(x, dict):
+            if 'observations' in x.keys():
+                x = x['observtions']['image']
+            else:
+                x = x['image']
+
         if should_preprocess:
             x = self.preprocess_input(x)
         shape = x.shape  # (..., C, H, ·W)

@@ -120,7 +120,7 @@ class Collector:
         return to_log
 
     def add_experience_to_dataset(self, observations: List[dict], actions: List[np.ndarray], rewards: List[np.ndarray], dones: List[np.ndarray]) -> None:
-        print('---------------', len(observations), len(actions) , len(rewards), len(dones))
+        # print('---------------', len(observations), len(actions) , len(rewards), len(dones))
         assert len(observations) == len(actions) == len(rewards) == len(dones)
         # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
         # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
@@ -137,7 +137,7 @@ class Collector:
         tt = (obs_img, obs_token,*map(lambda arr: np.swapaxes(arr, 0, 1), [actions, rewards, dones]))
         # print('tt', tt )
         for i, (img ,tok, a, r, d) in enumerate(zip(*tt)):
-            print(i)
+            # print(i)
             # o = item[0]
             # a = item[1]
             # r = item[2]
@@ -156,7 +156,7 @@ class Collector:
                 ends=torch.LongTensor(d),
                 mask_padding=torch.ones(d.shape[0], dtype=torch.bool),
             )
-            print(self.episode_ids)
+            # print(self.episode_ids)
             if self.episode_ids[i] is None:
                 self.episode_ids[i] = self.dataset.add_episode(episode)
             else:

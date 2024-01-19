@@ -20,7 +20,7 @@ class Episode:
     mask_padding: torch.BoolTensor
 
     def __post_init__(self):
-        print('!!!!!!!',len(self.observations), len(self.rewards), len(self.actions), len(self.ends),len(self.mask_padding))
+        # print('!!!!!!!',len(self.observations), len(self.rewards), len(self.actions), len(self.ends),len(self.mask_padding))
         assert len(self.actions) == len(self.rewards) == len(self.ends) == len(self.mask_padding)
         if self.ends.sum() > 0:
             idx_end = torch.argmax(self.ends) + 1
