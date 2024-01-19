@@ -48,7 +48,8 @@ class Collector:
             burnin_obs_token = torch.stack([episode.observations['token'] for episode in segmented_episodes], dim=0).to(
                 agent.device)
             burnin_obs = {'image': burnin_obs_image, 'token': burnin_obs_token}
-            print("token shape is ", burnin_obs_token.shape)
+            # print("token shape is ", burnin_obs_token.shape)
+            # print('token in collector is ', burnin_obs_token)
             burnin_obs_rec = torch.clamp(agent.tokenizer.encode_decode(burnin_obs, should_preprocess=True, should_postprocess=True), 0, 1)
 
         agent.actor_critic.reset(n=self.env.num_envs, burnin_observations=burnin_obs_rec, mask_padding=mask_padding)
@@ -129,8 +130,8 @@ class Collector:
         # for i in observations:
         #     obs.append({'image': np.swapaxes(i['image'], 0, 1), 'token': i['token']})
         obs_img = [i['image'] for i in observations]
-        obs_token = [i['token'] for i in observations]
-
+        obs_token = [[i['token']] for i in observations]  # todo this might be wrong
+        # print('obs_token is ', obs_token)
         # obs_img = np.swapaxes(obs_img, 0, 1)
         # obs_token = np.swapaxes(obs_token, 0, 1)
         obs_img = np.array(obs_img)

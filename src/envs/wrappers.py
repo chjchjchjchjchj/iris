@@ -54,6 +54,7 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         self.unwrapped.original_token = observation['token']
         # print('---- used observation')
         # using key to get the image
+        # print('observation token in wrapper ', observation['token'])
         return {'image': self.resize(observation), 'token':observation['token']}
         # return self.resize(observation)
 

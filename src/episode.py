@@ -25,6 +25,7 @@ class Episode:
         if self.ends.sum() > 0:
             idx_end = torch.argmax(self.ends) + 1
             self.observations = {'image': self.observations['image'][:idx_end], 'token':self.observations['token'][:idx_end]}
+            print('episode token is ', self.observations['token'])
             self.actions = self.actions[:idx_end]
             self.rewards = self.rewards[:idx_end]
             self.ends = self.ends[:idx_end]

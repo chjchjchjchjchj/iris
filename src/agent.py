@@ -33,7 +33,6 @@ class Agent(nn.Module):
     def act(self, obs: torch.FloatTensor, should_sample: bool = True, temperature: float = 1.0) -> torch.LongTensor:
         """
         obs is the image
-        todo you can add token observation here
         """
         # print('using original obs?', self.actor_critic.use_original_obs)
         input_ac = obs if self.actor_critic.use_original_obs else torch.clamp(self.tokenizer.encode_decode(obs, should_preprocess=True, should_postprocess=True), 0, 1)

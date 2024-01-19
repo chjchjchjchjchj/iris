@@ -29,6 +29,7 @@ class SingleProcessEnv(DoneTrackerEnv):
         img = obs['image']
         img = img[None, ...]
         tok = obs['token']
+        # print('token in single_process_env', tok)
         return {'image':img, 'token':tok}, np.array([reward]), done, None
 
     def render(self) -> None:

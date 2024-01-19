@@ -102,7 +102,6 @@ class WorldModel(nn.Module):
         act_tokens = rearrange(batch['actions'], 'b l -> b l 1')
         task_tokens = rearrange(batch['observations']['token'], 'b l -> b l 1')
         tokens = rearrange(torch.cat((obs_tokens,   act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
-        # todo 103 add the language tokens here
         outputs = self(tokens)
 
         labels_observations, labels_rewards, labels_ends = self.compute_labels_world_model(obs_tokens, batch['rewards'], batch['ends'], batch['mask_padding'])
