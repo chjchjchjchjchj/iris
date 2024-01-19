@@ -25,11 +25,13 @@ class Collector:
         self.heuristic = RandomHeuristic(self.env.num_actions)
 
     @torch.no_grad()
-    def collect(self, agent: Agent, epoch: int, epsilon: float, should_sample: bool, temperature: float, burn_in: int, *, num_steps: Optional[int] = None, num_episodes: Optional[int] = None):
+    def collect(self, agent: Agent, epoch: int, epsilon: float, should_sample: bool, temperature: float, burn_in: int, *, num_steps: Optional[int] = None, num_episodes: Optional[int] = None, info_flag = False):
         assert self.env.num_actions == agent.world_model.act_vocab_size
         assert 0 <= epsilon <= 1
 
         assert (num_steps is None) != (num_episodes is None)
+        # if info_flag == True:
+        #     print('now find it ')
         should_stop = lambda steps, episodes: steps >= num_steps if num_steps is not None else episodes >= num_episodes
 
         to_log = []
@@ -60,6 +62,8 @@ class Collector:
             observations.append(self.obs)
             # print('in collector self.obs', self.obs.shape)
             # print('bug position :', self.obs)
+            # if info_flag :
+                 # print()
             img = rearrange(torch.FloatTensor(self.obs['image']).div(255), 'n h w c -> n c h w').to(agent.device)
             obs = {'image':img, 'token':self.obs['token']}
             act = agent.act(obs, should_sample=should_sample, temperature=temperature).cpu().numpy()
@@ -68,6 +72,7 @@ class Collector:
                 act = self.heuristic.act(obs).cpu().numpy()
 
             self.obs, reward, done, _ = self.env.step(act)
+            # print('self.obs is ', self.obs)
             # print(self.env.unwrapped_)
             # print('token: ', self.env.env.unwrapped.original_token)
             # print(dir(self.env.env.env.env.unwrapped))
@@ -125,30 +130,24 @@ class Collector:
     def add_experience_to_dataset(self, observations: List[dict], actions: List[np.ndarray], rewards: List[np.ndarray], dones: List[np.ndarray]) -> None:
         # print('---------------', len(observations), len(actions) , len(rewards), len(dones))
         assert len(observations) == len(actions) == len(rewards) == len(dones)
+        # print('len observations', len(observations))
         # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
         # for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
         # tt = []
         # for i in observations:
         #     obs.append({'image': np.swapaxes(i['image'], 0, 1), 'token': i['token']})
         obs_img = [i['image'] for i in observations]
-        obs_token = [[i['token']] for i in observations]  # todo this might be wrong
+        obs_token = [i['token'] for i in observations]  # todo this might be wrong
         # print('obs_token is ', obs_token)
         # obs_img = np.swapaxes(obs_img, 0, 1)
         # obs_token = np.swapaxes(obs_token, 0, 1)
         obs_img = np.array(obs_img)
         obs_token = np.array(obs_token)
-        tt = (obs_img, obs_token,*map(lambda arr: np.swapaxes(arr, 0, 1), [actions, rewards, dones]))
+        tt = [*map(lambda arr: np.swapaxes(arr, 0, 1), [obs_img, obs_token, actions, rewards, dones])]
         # print('tt', tt )
         for i, (img ,tok, a, r, d) in enumerate(zip(*tt)):
-            # print(i)
-            # o = item[0]
-            # a = item[1]
-            # r = item[2]
-            # d = item[3]
-            # oo = o['image']
-            # oo = np.swapaxes(oo, 0, 1)
+            # print('iter', i)
             img = torch.ByteTensor(img).permute(0, 3, 1, 2).contiguous()
-            # o['image'] = oo
             tok = torch.LongTensor(tok)
 
 

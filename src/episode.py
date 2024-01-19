@@ -25,7 +25,7 @@ class Episode:
         if self.ends.sum() > 0:
             idx_end = torch.argmax(self.ends) + 1
             self.observations = {'image': self.observations['image'][:idx_end], 'token':self.observations['token'][:idx_end]}
-            print('episode token is ', self.observations['token'])
+            # print('episode token is ', self.observations['token'])
             self.actions = self.actions[:idx_end]
             self.rewards = self.rewards[:idx_end]
             self.ends = self.ends[:idx_end]
@@ -59,7 +59,10 @@ class Episode:
             return padded_dict
         def pad(x):
             if isinstance(x, dict):
-                return pad_dict(x)
+                tmp = pad_dict(x)
+                # print('tmp padding ', len(tmp['image']) , len(tmp['token']))
+                # assert len(tmp['image']) == len(tmp['token'])
+                return  tmp
             pad_right = torch.nn.functional.pad(x, [0 for _ in range(2 * x.ndim - 1)] + [padding_length_right]) if padding_length_right > 0 else x
             return torch.nn.functional.pad(pad_right, [0 for _ in range(2 * x.ndim - 2)] + [padding_length_left, 0]) if padding_length_left > 0 else pad_right
 

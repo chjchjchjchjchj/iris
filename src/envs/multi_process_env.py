@@ -35,7 +35,10 @@ def child_env(child_id: int, env_fn: Callable, child_conn: Connection) -> None:
             obs = env.reset()
             child_conn.send(Message(MessageType.RESET_RETURN, obs))
         elif message_type == MessageType.STEP:
-            obs, rew, done, _ = env.step(content)
+            tmp = env.step(content)
+            # print('env.step ', tmp)
+            obs, rew, done,trun , _ = tmp
+            done = trun  or done
             if done:
                 obs = env.reset()
             child_conn.send(Message(MessageType.STEP_RETURN, (obs, rew, done, None)))
@@ -74,16 +77,30 @@ class MultiProcessEnv(DoneTrackerEnv):
         for parent_conn in self.parent_conns:
             parent_conn.send(Message(MessageType.RESET))
         content = self._receive(check_type=MessageType.RESET_RETURN)
-        return np.stack(content)
+        img_list = []
+        tok_list = []
+        for i in content:
+            img_list.append(i['image'])
+            tok_list.append(i['token'])
+        content = {'image':np.stack(img_list), 'token':np.stack(tok_list)}
+        # print('content in  multi ', content)
+        return content
 
     def step(self, actions: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Any]:
         for parent_conn, action in zip(self.parent_conns, actions):
             parent_conn.send(Message(MessageType.STEP, action))
         content = self._receive(check_type=MessageType.STEP_RETURN)
+        # print('content in multi', content)
         obs, rew, done, _ = zip(*content)
+        img_list = []
+        tok_list = []
+        for i in obs:
+            img_list.append(i['image'])
+            tok_list.append(i['token'])
+        obs = {'image':np.stack(img_list), 'token':np.stack(tok_list)}
         done = np.stack(done)
         self.update_done_tracker(done)
-        return np.stack(obs), np.stack(rew), done, None
+        return obs, np.stack(rew), done, None
 
     def close(self) -> None:
         for parent_conn in self.parent_conns:

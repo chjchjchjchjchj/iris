@@ -32,10 +32,12 @@ class EpisodesDataset:
     def add_episode(self, episode: Episode) -> int:
         if self.max_num_episodes is not None and len(self.episodes) == self.max_num_episodes:
             self._popleft()
+        # print('add_new_episode')
         episode_id = self._append_new_episode(episode)
         return episode_id
 
     def get_episode(self, episode_id: int) -> Episode:
+
         assert episode_id in self.episode_id_to_queue_idx
         queue_idx = self.episode_id_to_queue_idx[episode_id]
         return self.episodes[queue_idx]
@@ -55,6 +57,8 @@ class EpisodesDataset:
         return self.episodes.popleft()
 
     def _append_new_episode(self, episode):
+        # todo change episode id here ?
+        # print('used append new episode')
         episode_id = self.num_seen_episodes
         self.episode_id_to_queue_idx[episode_id] = len(self.episodes)
         self.episodes.append(episode)
@@ -75,6 +79,7 @@ class EpisodesDataset:
             else:
                 stop = random.randint(1, len(sampled_episode))
                 start = stop - sequence_length
+            # print('start ', start, 'stop', stop)
             sampled_episodes_segments.append(sampled_episode.segment(start, stop, should_pad=True))
             assert len(sampled_episodes_segments[-1]) == sequence_length
         return sampled_episodes_segments
@@ -89,7 +94,10 @@ class EpisodesDataset:
                 # print()
 
                 # bat_tok = torch.stack([torch.tensor(e_s[k]['token']) if len(e_s[k]['token']) == shape else torch.zeros(shape) for e_s in episodes_segments])
-                bat_tok = torch.stack([torch.tensor(e_s[k]['token']) for e_s in episodes_segments])
+                try:
+                    bat_tok = torch.stack([torch.tensor(e_s[k]['token']) for e_s in episodes_segments])
+                except Exception as e:
+                    print('?')
                 # print('bat_tok in dataset is ', bat_tok)
                 # todo the tok sometimes become Tensor(0,)
                 #     bat_tok = torch.stack([e_s[k]['token'] for e_s in episodes_segments])
@@ -123,6 +131,7 @@ class EpisodesDataset:
         for episode_id in episode_ids:
             episode = Episode(**torch.load(directory / f'{episode_id}.pt'))
             self.episode_id_to_queue_idx[episode_id] = len(self.episodes)
+            # print('add episode in the load_disk')
             self.episodes.append(episode)
 
 

@@ -51,7 +51,7 @@ collection:
       burn_in: ${training.actor_critic.burn_in}
 
 training:
-  should: True
+  should: False
   learning_rate: 0.0001
   tokenizer:
     batch_num_samples: 256
@@ -80,7 +80,7 @@ training:
 
 evaluation:
   should: True
-  every: 100
+  every: 1
   tokenizer:
     batch_num_samples: ${training.tokenizer.batch_num_samples}
     start_after_epochs: ${training.tokenizer.start_after_epochs}

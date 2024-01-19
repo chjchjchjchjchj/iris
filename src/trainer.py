@@ -113,7 +113,7 @@ class Trainer:
 
             if self.cfg.evaluation.should and (epoch % self.cfg.evaluation.every == 0):
                 self.test_dataset.clear()
-                to_log += self.test_collector.collect(self.agent, epoch, **self.cfg.collection.test.config)
+                to_log += self.test_collector.collect(self.agent, epoch, **self.cfg.collection.test.config, info_flag=True)
                 to_log += self.eval_agent(epoch)
 
             if self.cfg.training.should:

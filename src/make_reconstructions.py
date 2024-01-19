@@ -8,7 +8,7 @@ import torch
 def make_reconstructions_from_batch(batch, save_dir, epoch, tokenizer):
     check_batch(batch)
 
-    original_frames = tensor_to_np_frames(rearrange(batch['observations'], 'b t c h w -> b t h w c'))
+    original_frames = tensor_to_np_frames(rearrange(batch['observations']['image'], 'b t c h w -> b t h w c'))
     all = [original_frames]
 
     rec_frames = generate_reconstructions_with_tokenizer(batch, tokenizer)
@@ -22,7 +22,7 @@ def make_reconstructions_from_batch(batch, save_dir, epoch, tokenizer):
 
 def check_batch(batch):
     assert sorted(batch.keys()) == ['actions', 'ends', 'mask_padding', 'observations', 'rewards']
-    b, t, _, _, _ = batch['observations'].shape  # (B, T, C, H, W)
+    b, t, _, _, _ = batch['observations']['image'].shape  # (B, T, C, H, W)
     assert batch['actions'].shape == batch['rewards'].shape == batch['ends'].shape == batch['mask_padding'].shape == (b, t)
 
 
@@ -38,9 +38,9 @@ def check_float_btw_0_1(inputs):
 @torch.no_grad()
 def generate_reconstructions_with_tokenizer(batch, tokenizer):
     check_batch(batch)
-    inputs = rearrange(batch['observations'], 'b t c h w -> (b t) c h w')
+    inputs = rearrange(batch['observations']['image'], 'b t c h w -> (b t) c h w')
     outputs = reconstruct_through_tokenizer(inputs, tokenizer)
-    b, t, _, _, _ = batch['observations'].size()
+    b, t, _, _, _ = batch['observations']['image'].size()
     outputs = rearrange(outputs, '(b t) c h w -> b t h w c', b=b, t=t)
     rec_frames = tensor_to_np_frames(outputs)
     return rec_frames
