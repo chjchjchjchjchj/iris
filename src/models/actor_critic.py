@@ -86,7 +86,7 @@ class ActorCritic(nn.Module):
         x = F.relu(self.maxp3(self.conv3(x)))
         x = F.relu(self.maxp4(self.conv4(x)))
         x = torch.flatten(x, start_dim=1)
-        print('in ac x_shape is ', x.shape)
+        # print('in ac x_shape is ', x.shape)
 
         if mask_padding is None:
             self.hx, self.cx = self.lstm(x, (self.hx, self.cx))

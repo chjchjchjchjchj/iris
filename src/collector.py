@@ -59,6 +59,7 @@ class Collector:
 
             observations.append(self.obs)
             # print('in collector self.obs', self.obs.shape)
+            # print('bug position :', self.obs)
             img = rearrange(torch.FloatTensor(self.obs['image']).div(255), 'n h w c -> n c h w').to(agent.device)
             obs = {'image':img, 'token':self.obs['token']}
             act = agent.act(obs, should_sample=should_sample, temperature=temperature).cpu().numpy()

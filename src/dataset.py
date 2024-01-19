@@ -90,7 +90,7 @@ class EpisodesDataset:
 
                 # bat_tok = torch.stack([torch.tensor(e_s[k]['token']) if len(e_s[k]['token']) == shape else torch.zeros(shape) for e_s in episodes_segments])
                 bat_tok = torch.stack([torch.tensor(e_s[k]['token']) for e_s in episodes_segments])
-                print('bat_tok in dataset is ', bat_tok)
+                # print('bat_tok in dataset is ', bat_tok)
                 # todo the tok sometimes become Tensor(0,)
                 #     bat_tok = torch.stack([e_s[k]['token'] for e_s in episodes_segments])
                 # RuntimeError: stack expects each tensor to be equal size, but got [1] at entry 0 and [0] at entry 1
