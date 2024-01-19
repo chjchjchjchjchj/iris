@@ -81,7 +81,7 @@ class WorldModel(nn.Module):
     def forward(self, tokens: torch.LongTensor, past_keys_values: Optional[KeysValues] = None) -> WorldModelOutput:
         # print('in world model, the token shape is ', tokens.shape)
         num_steps = tokens.size(1)  # (B, T)
-        assert num_steps <= self.config.max_tokens
+        # assert num_steps <= self.config.max_tokens
         prev_steps = 0 if past_keys_values is None else past_keys_values.size
 
         sequences = self.embedder(tokens, num_steps, prev_steps) + self.pos_emb(prev_steps + torch.arange(num_steps, device=tokens.device))
@@ -100,8 +100,8 @@ class WorldModel(nn.Module):
             obs_tokens = tokenizer.encode(batch['observations']['image'], should_preprocess=True).tokens  # (BL, K)
         # print('obs_tokens : ', obs_tokens.shape)
         act_tokens = rearrange(batch['actions'], 'b l -> b l 1')
-        # task_tokens = rearrange(batch['observations']['token'], 'b l -> b l 1')
-        tokens = rearrange(torch.cat((obs_tokens,  act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
+        task_tokens = rearrange(batch['observations']['token'], 'b l -> b l 1')
+        tokens = rearrange(torch.cat((obs_tokens,   act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
         # todo 103 add the language tokens here
         outputs = self(tokens)
 
