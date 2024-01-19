@@ -41,6 +41,8 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         self.observation_space = gym.spaces.Box(low=0, high=255, shape=(size[0], size[1], 3), dtype=np.uint8)
         self.unwrapped.original_obs = None
         self.unwrapped.original_token = None
+        self.latent_dict = {474: 0, 8: 1, 5778: 2, 16: 3, 17883: 4, 2701: 5, 0: 6, 888: 7, 2728: 8, 12: 9, 1228: 10, 129: 11, 539: 12, 11667: 13, 2851: 14, 562: 15, 253: 16, 7623: 17, 9319: 18, 4782:19, 840:20}
+        self.hist_cnt = len(self.latent_dict)
 
     def resize(self, obs: np.ndarray):
         if isinstance(obs, dict):
@@ -55,7 +57,15 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         # print('---- used observation')
         # using key to get the image
         # print('observation token in wrapper ', observation['token'])
-        return {'image': self.resize(observation), 'token':observation['token']}
+        tok = observation['token']
+        if tok in self.latent_dict.keys():
+            tok = self.latent_dict[tok]
+        else:
+            self.latent_dict[tok] = self.hist_cnt
+            self.hist_cnt +=1
+            tok = self.latent_dict[tok]
+            print('update the tok ', self.latent_dict)
+        return {'image': self.resize(observation), 'token':tok}
         # return self.resize(observation)
 
 class RewardClippingWrapper(gym.RewardWrapper):
