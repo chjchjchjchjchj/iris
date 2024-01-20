@@ -32,6 +32,7 @@ class Episode:
             self.mask_padding = self.mask_padding[:idx_end]
 
     def __len__(self) -> int:
+        # print(self.observations)
         return self.observations['image'].size(0)
 
     def merge(self, other: Episode) -> Episode:
