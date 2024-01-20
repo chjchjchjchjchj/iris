@@ -9,8 +9,8 @@ class Slicer(nn.Module):
     def __init__(self, max_blocks: int, block_mask: torch.Tensor) -> None:
         super().__init__()
         self.block_size = block_mask.size(0)
-        print('block mask', block_mask)
-        print('block mask sum ', block_mask.sum())
+        # print('block mask', block_mask)
+        # print('block mask sum ', block_mask.sum())
         self.num_kept_tokens = block_mask.sum().long().item()
         kept_indices = torch.where(block_mask)[0].repeat(max_blocks)
         offsets = torch.arange(max_blocks).repeat_interleave(self.num_kept_tokens)

@@ -157,7 +157,7 @@ class ActorCritic(nn.Module):
             all_ends.append(torch.tensor(done).reshape(-1, 1))
 
         self.clear()
-        print('all obs ', all_observations)
+        # print('all obs ', all_observations)
         return ImagineOutput(
             observations=torch.stack(all_observations, dim=1).mul(255).byte(),      # (B, T, C, H, W) in [0, 255]
             actions=torch.cat(all_actions, dim=1),                                  # (B, T)
