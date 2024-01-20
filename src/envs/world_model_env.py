@@ -30,14 +30,20 @@ class WorldModelEnv:
     def reset(self) -> torch.FloatTensor:
         assert self.env is not None
         obs = torchvision.transforms.functional.to_tensor(self.env.reset()).to(self.device).unsqueeze(0)  # (1, C, H, W) in [0., 1.]
+
         return self.reset_from_initial_observations(obs)
 
     @torch.no_grad()
     def reset_from_initial_observations(self, observations: torch.FloatTensor) -> torch.FloatTensor:
-        obs_tokens = self.tokenizer.encode(observations, should_preprocess=True).tokens    # (B, C, H, W) -> (B, K)
+        obs_img = observations['image']
+        obs_tok = observations['token']
+        obs_tokens = self.tokenizer.encode(obs_img, should_preprocess=True).tokens    # (B, C, H, W) -> (B, K)  64， 16
+        # print('before cat token ', obs_tokens.shape) # todo token 从哪里传进来
+        obs_tokens = torch.cat((obs_tokens, obs_tok),dim=1)
+        # print('after cat token ', obs_tokens.shape)
         _, num_observations_tokens = obs_tokens.shape
         if self.num_observations_tokens is None:
-            self._num_observations_tokens = num_observations_tokens
+            self._num_observations_tokens = num_observations_tokens # 17
 
         _ = self.refresh_keys_values_with_initial_obs_tokens(obs_tokens)
         self.obs_tokens = obs_tokens
@@ -46,8 +52,9 @@ class WorldModelEnv:
 
     @torch.no_grad()
     def refresh_keys_values_with_initial_obs_tokens(self, obs_tokens: torch.LongTensor) -> torch.FloatTensor:
+
         n, num_observations_tokens = obs_tokens.shape
-        assert num_observations_tokens == self.num_observations_tokens
+        assert num_observations_tokens == self.num_observations_tokens, f"num_obs {num_observations_tokens}, self.num_obs {self.num_observations_tokens}"
         self.keys_values_wm = self.world_model.transformer.generate_empty_keys_values(n=n, max_tokens=self.world_model.config.max_tokens)
         outputs_wm = self.world_model(obs_tokens, past_keys_values=self.keys_values_wm)
         return outputs_wm.output_sequence  # (B, K, E)
@@ -59,7 +66,7 @@ class WorldModelEnv:
         num_passes = 1 + self.num_observations_tokens if should_predict_next_obs else 1
 
         output_sequence, obs_tokens = [], []
-
+        # self.obs_tokens = torch.cat((self.obs_tokens, torch.zeros((self.obs_tokens.shape[0] , 1)).to(self.device)),dim=1)
         if self.keys_values_wm.size + num_passes > self.world_model.config.max_tokens:
             _ = self.refresh_keys_values_with_initial_obs_tokens(self.obs_tokens)
 
@@ -93,7 +100,8 @@ class WorldModelEnv:
 
     @torch.no_grad()
     def decode_obs_tokens(self) -> List[Image.Image]:
-        embedded_tokens = self.tokenizer.embedding(self.obs_tokens)     # (B, K, E)
+        q = self.obs_tokens[:, :-1]
+        embedded_tokens = self.tokenizer.embedding(q)     # (B, K, E)
         z = rearrange(embedded_tokens, 'b (h w) e -> b e h w', h=int(np.sqrt(self.num_observations_tokens)))
         rec = self.tokenizer.decode(z, should_postprocess=True)         # (B, C, H, W)
         return torch.clamp(rec, 0, 1)

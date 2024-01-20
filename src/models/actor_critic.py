@@ -139,10 +139,11 @@ class ActorCritic(nn.Module):
 
         burnin_observations = torch.clamp(tokenizer.encode_decode(initial_observations[:, :-1], should_preprocess=True, should_postprocess=True), 0, 1) if initial_observations.size(1) > 1 else None
         self.reset(n=initial_observations.size(0), burnin_observations=burnin_observations, mask_padding=mask_padding[:, :-1])
-
-        obs = wm_env.reset_from_initial_observations(initial_observations[:, -1])
+        obs_img = initial_observations[:, -1]
+        obs_tok = batch['observations']['token'][:,-1].unsqueeze(1)
+        obs = wm_env.reset_from_initial_observations({'image':obs_img, 'token':obs_tok})
         for k in tqdm(range(horizon), disable=not show_pbar, desc='Imagination', file=sys.stdout):
-
+            # imagine todo
             all_observations.append(obs)
 
             outputs_ac = self(obs)

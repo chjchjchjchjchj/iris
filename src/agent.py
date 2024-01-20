@@ -34,6 +34,8 @@ class Agent(nn.Module):
         """
         obs is the image
         """
+        if isinstance(obs, dict):
+            obs = obs['image']
         # print('using original obs?', self.actor_critic.use_original_obs)
         input_ac = obs if self.actor_critic.use_original_obs else torch.clamp(self.tokenizer.encode_decode(obs, should_preprocess=True, should_postprocess=True), 0, 1)
         # print('input_ac shape ', input_ac.shape )
