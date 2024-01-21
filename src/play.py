@@ -40,7 +40,7 @@ def main(cfg: DictConfig):
                                  config=instantiate(cfg.world_model))
         actor_critic = ActorCritic(**cfg.actor_critic, act_vocab_size=test_env.num_actions)
         agent = Agent(tokenizer, world_model, actor_critic).to(device)
-        agent.load(Path('/root/root/iris/outputs/2024-01-17/16-47-18/checkpoints/last.pt'), device)
+        agent.load(Path('/root/iris/outputs/2024-01-20/14-49-13/checkpoints/last.pt'), device)
 
         if cfg.mode == 'play_in_world_model':
             env = WorldModelEnv(tokenizer=agent.tokenizer, world_model=agent.world_model, device=device, env=env_fn())
