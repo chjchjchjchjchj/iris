@@ -23,7 +23,12 @@ class SingleProcessEnv(DoneTrackerEnv):
         return {'image':img, 'token':tok}
 
     def step(self, action) -> Tuple[dict, np.ndarray, np.ndarray, Any]:
-        obs, reward, done, _ = self.env.step(action[0])  # action is supposed to be ndarray (1,)
+        tmp = self.env.step(action[0])  # action is supposed to be ndarray (1,)
+        if len(tmp ) == 4:
+            obs, reward, done, _ = tmp
+        else:
+            obs,reward, done, trun, _ = tmp
+            done = done or trun
         done = np.array([done])
         self.update_done_tracker(done)
         img = obs['image']

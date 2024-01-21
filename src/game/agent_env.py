@@ -21,7 +21,9 @@ class AgentEnv:
         self._return = None
 
     def _to_tensor(self, obs: np.ndarray):
-        assert isinstance(obs, np.ndarray) and obs.dtype == np.uint8
+        if isinstance(obs, dict):
+            obs  = obs['image']
+        # assert isinstance(obs, np.ndarray) and obs.dtype == np.uint8
         return rearrange(torch.FloatTensor(obs).div(255), 'n h w c -> n c h w').to(self.agent.device)
 
     def _to_array(self, obs: torch.FloatTensor):
@@ -43,11 +45,13 @@ class AgentEnv:
         self.obs = self._to_tensor(obs) if isinstance(self.env, SingleProcessEnv) else obs
         self._t += 1
         self._return += reward[0]
+        # print()
         info = {
             'timestep': self._t,
             'action': self.action_names[act[0]],
             'return': self._return,
         }
+        # print(info)
         return obs, reward, done, info
 
     def render(self) -> Image.Image:

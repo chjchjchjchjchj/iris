@@ -31,7 +31,7 @@ def main(cfg: DictConfig):
     size = [h * multiplier, w * multiplier]
 
     if cfg.mode == 'episode_replay':
-        env = EpisodeReplayEnv(replay_keymap_name=cfg.env.keymap, episode_dir=Path('media/episodes'))
+        env = EpisodeReplayEnv(replay_keymap_name=cfg.env.keymap, episode_dir=Path('/root/iris/outputs/2024-01-21/10-58-11/media/episodes'))
         keymap = 'episode_replay'
 
     else:

@@ -1,7 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple, Union
-
+import os
+os.environ['SDL_VIDEODRIVER']='dummy'
 import gym
 import numpy as np
 import pygame
@@ -83,7 +84,7 @@ class Game:
             action = 0  # noop
             pygame.event.pump()
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+                if event.type == pygame.QUIT or len(segment_buffer) > 30:
                     should_stop = True
                 if event.type == pygame.KEYDOWN and event.key in self.keymap.keys():
                     action = self.keymap[event.key]
@@ -113,19 +114,23 @@ class Game:
                 continue
 
             _, reward, done, info = self.env.step(action)
-
+            print('info', info)
             img = info['rgb'] if isinstance(self.env, gym.Env) else self.env.render()
             draw_game(img)
 
             if recording:
                 segment_buffer.append(np.array(img))
+                if isinstance(self.env, gym.Env):
+                    timestep = info['timestep']
+                    if timestep > 200:
+                        done = True
 
             if self.record_mode:
                 episode_buffer.append(np.array(img))
-            print('verbose? ', self.verbose)
+            # print('verbose? ', self.verbose)
             if self.verbose:
                 clear_header()
-                print(f'Action: {self.action_names[action]}')
+                print(f'Action: {self.action_names[action]}', self.action_names)
                 draw_text(f'Action: {self.action_names[action]}', idx_line=0)
                 draw_text(f'Reward: {reward if isinstance(reward, float) else reward.item(): .2f}', idx_line=1)
                 draw_text(f'Done: {done}', idx_line=2)
