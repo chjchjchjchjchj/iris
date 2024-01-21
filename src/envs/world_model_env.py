@@ -29,8 +29,16 @@ class WorldModelEnv:
     @torch.no_grad()
     def reset(self) -> torch.FloatTensor:
         assert self.env is not None
-        obs = torchvision.transforms.functional.to_tensor(self.env.reset()).to(self.device).unsqueeze(0)  # (1, C, H, W) in [0., 1.]
-
+        # print(self.env.reset()['image'])
+        data = self.env.reset()
+        obs_img = data['image']
+        obs_tok = [data['token']]
+        obs_img = torchvision.transforms.functional.to_tensor(obs_img).to(self.device).unsqueeze(0)  # (1, C, H, W) in [0., 1.]
+        # obs_tok = torchvision.transforms.functional.to_tensor(obs_tok).to(self.device).unsqueeze(0)  # (1, C, H, W) in [0., 1.]
+        print('obs_img shape',  obs_img.shape)
+        obs_tok = torch.tensor(obs_tok).to(self.device).unsqueeze(0)
+        print('obs_tok shape', obs_tok.shape )
+        obs = {'image': obs_img, 'token': obs_tok}
         return self.reset_from_initial_observations(obs)
 
     @torch.no_grad()

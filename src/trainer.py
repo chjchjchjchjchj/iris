@@ -41,6 +41,8 @@ class Trainer:
         self.device = torch.device(cfg.common.device)
 
         self.ckpt_dir = Path('checkpoints')
+        # self.ckpt_dir = Path('/root/iris/outputs/2024-01-20/14-49-13/checkpoints')
+        # self.media_dir = Path('/root/iris/outputs/2024-01-20/14-49-13/media')
         self.media_dir = Path('media')
         self.episode_dir = self.media_dir / 'episodes'
         self.reconstructions_dir = self.media_dir / 'reconstructions'
@@ -109,7 +111,8 @@ class Trainer:
             if self.cfg.training.should:
                 if epoch <= self.cfg.collection.train.stop_after_epochs:
                     to_log += self.train_collector.collect(self.agent, epoch, **self.cfg.collection.train.config)
-                to_log += self.train_agent(epoch)
+                if epoch % 5 == 0:
+                    to_log += self.train_agent(epoch)
 
             if self.cfg.evaluation.should and (epoch % self.cfg.evaluation.every == 0):
                 self.test_dataset.clear()
