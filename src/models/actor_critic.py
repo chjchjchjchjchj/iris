@@ -101,6 +101,7 @@ class ActorCritic(nn.Module):
     def compute_loss(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, imagine_horizon: int, gamma: float, lambda_: float, entropy_weight: float, **kwargs: Any) -> LossWithIntermediateLosses:
         assert not self.use_original_obs
         outputs = self.imagine(batch, tokenizer, world_model, horizon=imagine_horizon)
+        # for i in len(imagine_horizon):
 
         with torch.no_grad():
             lambda_returns = compute_lambda_returns(

@@ -111,8 +111,8 @@ class Trainer:
             if self.cfg.training.should:
                 if epoch <= self.cfg.collection.train.stop_after_epochs:
                     to_log += self.train_collector.collect(self.agent, epoch, **self.cfg.collection.train.config)
-                if epoch % 5 == 0:
-                    to_log += self.train_agent(epoch)
+                # if epoch % 5 == 0:
+                to_log += self.train_agent(epoch)
 
             if self.cfg.evaluation.should and (epoch % self.cfg.evaluation.every == 0):
                 self.test_dataset.clear()
