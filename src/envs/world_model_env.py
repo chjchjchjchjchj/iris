@@ -70,7 +70,7 @@ class WorldModelEnv:
     @torch.no_grad()
     def step(self, action: Union[int, np.ndarray, torch.LongTensor], should_predict_next_obs: bool = True) -> None:
         assert self.keys_values_wm is not None and self.num_observations_tokens is not None
-
+        # todo 写一下embedder怎么处理
         num_passes = 1 + self.num_observations_tokens if should_predict_next_obs else 1
 
         output_sequence, obs_tokens = [], []
@@ -82,15 +82,20 @@ class WorldModelEnv:
         token = token.reshape(-1, 1).to(self.device)  # (B, 1)
 
         for k in range(num_passes):  # assumption that there is only one action token.
+            # todo 忽略了最后一个task token 然后把任务里的最后一个token取出来给进去
 
-            outputs_wm = self.world_model(token, past_keys_values=self.keys_values_wm)
+            outputs_wm = self.world_model(token, past_keys_values=self.keys_values_wm) # 64 1
             output_sequence.append(outputs_wm.output_sequence)
 
             if k == 0:
-                reward = Categorical(logits=outputs_wm.logits_rewards).sample().float().cpu().numpy().reshape(-1) - 1   # (B,)
+                reward = Categorical(logits=outputs_wm.logits_rewards).sample().float().cpu().numpy().reshape(-1) / 2   # (B,)
                 done = Categorical(logits=outputs_wm.logits_ends).sample().cpu().numpy().astype(bool).reshape(-1)       # (B,)
 
-            if k < self.num_observations_tokens:
+            if k < self.num_observations_tokens :
+                if k == self.num_observations_tokens - 1:
+                    token = torch.zeros_like(token)
+                    obs_tokens.append(token)
+                    continue
                 token = Categorical(logits=outputs_wm.logits_observations).sample()
                 obs_tokens.append(token)
 
@@ -98,6 +103,7 @@ class WorldModelEnv:
         self.obs_tokens = torch.cat(obs_tokens, dim=1)        # (B, K)
 
         obs = self.decode_obs_tokens() if should_predict_next_obs else None
+        # print('obs shape is ', obs.shape)
         return obs, reward, done, None
 
     @torch.no_grad()
@@ -108,11 +114,14 @@ class WorldModelEnv:
 
     @torch.no_grad()
     def decode_obs_tokens(self) -> List[Image.Image]:
+        # todo get decode the word
         q = self.obs_tokens[:, :-1]
+        print('the word token is ', self.obs_tokens[:, -1])
         embedded_tokens = self.tokenizer.embedding(q)     # (B, K, E)
+        # embedded_tokens = self.tokenizer.embedding(self.obs_tokens)
         z = rearrange(embedded_tokens, 'b (h w) e -> b e h w', h=int(np.sqrt(self.num_observations_tokens)))
         rec = self.tokenizer.decode(z, should_postprocess=True)         # (B, C, H, W)
-        return torch.clamp(rec, 0, 1)
+        return {'image':torch.clamp(rec, 0, 1),'token':self.obs_tokens[:,-1].unsqueeze(-1)}
 
     @torch.no_grad()
     def render(self):
