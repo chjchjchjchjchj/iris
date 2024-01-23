@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 import sys
@@ -160,7 +161,19 @@ class ActorCritic(nn.Module):
             outputs_ac = self(obs)
             action_token = Categorical(logits=outputs_ac.logits_actions).sample()
             obs, reward, done, _ = wm_env.step(action_token, should_predict_next_obs=(k < horizon - 1))
-            # print('show obs token', obs)
+            # print('show obs token', obs['token'])
+            if obs is not None:
+                assert obs['token'].shape == obs_tok.shape
+                # task = torch.tensor([0] * len(reward), device=0)
+                obs['token'] = obs_tok
+                # print('before random ', obs['token'])
+                for tk in range(len(reward)):
+                    if reward[tk] == 1:
+                        obs['token'][tk] = random.randint(0,37)
+                # print('show obs token', obs['token'])
+                # print('show reward ', reward)
+
+
             all_actions.append(action_token)
             all_logits_actions.append(outputs_ac.logits_actions)
             all_values.append(outputs_ac.means_values)
