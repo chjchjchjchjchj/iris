@@ -53,7 +53,7 @@ class Collector:
             burnin_obs = {'image': burnin_obs_image, 'token': burnin_obs_token}
             # print("token shape is ", burnin_obs_token.shape)
             # print('token in collector is ', burnin_obs_token)
-            burnin_obs_rec = torch.clamp(agent.tokenizer.encode_decode(burnin_obs, should_preprocess=True, should_postprocess=True), 0, 1)
+            burnin_obs_rec = {'image':torch.clamp(agent.tokenizer.encode_decode(burnin_obs, should_preprocess=True, should_postprocess=True), 0, 1) , 'token':burnin_obs_token}
 
         agent.actor_critic.reset(n=self.env.num_envs, burnin_observations=burnin_obs_rec, mask_padding=mask_padding)
         pbar = tqdm(total=num_steps if num_steps is not None else num_episodes, desc=f'Experience collection ({self.dataset.name})', file=sys.stdout)

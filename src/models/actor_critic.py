@@ -159,8 +159,12 @@ class ActorCritic(nn.Module):
 
         self.clear()
         # print('all obs ', all_observations)
+        imgs = [x['image'] for x in all_observations]
+        imgs = torch.stack(imgs, dim=1).mul(255).byte()
+        tokens = [x['token'] for x in all_observations]
+        tokens = torch.cat(tokens, dim=1)
         return ImagineOutput(
-            observations=torch.stack(all_observations, dim=1).mul(255).byte(),      # (B, T, C, H, W) in [0, 255]
+            observations={'image':imgs, 'token':tokens},      # (B, T, C, H, W) in [0, 255]
             actions=torch.cat(all_actions, dim=1),                                  # (B, T)
             logits_actions=torch.cat(all_logits_actions, dim=1),                    # (B, T, #actions)
             values=rearrange(torch.cat(all_values, dim=1), 'b t 1 -> b t'),         # (B, T)
