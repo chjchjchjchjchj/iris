@@ -89,6 +89,7 @@ class WorldModelEnv:
 
             if k == 0:
                 reward = Categorical(logits=outputs_wm.logits_rewards).sample().float().cpu().numpy().reshape(-1) / 2   # (B,)
+                # print('world model env reward', reward)
                 done = Categorical(logits=outputs_wm.logits_ends).sample().cpu().numpy().astype(bool).reshape(-1)       # (B,)
 
             if k < self.num_observations_tokens :
