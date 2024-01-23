@@ -26,23 +26,33 @@ class WorldModel(nn.Module):
     def __init__(self, obs_vocab_size: int, act_vocab_size: int, config: TransformerConfig) -> None:
         super().__init__()
         self.obs_vocab_size, self.act_vocab_size = obs_vocab_size, act_vocab_size
+        self.task_vocab_size = 39
         self.config = config
         self.transformer = Transformer(config)
 
         all_but_last_obs_tokens_pattern = torch.ones(config.tokens_per_block)
         all_but_last_obs_tokens_pattern[-2] = 0
+        all_but_last_obs_tokens_pattern[-3] = 0
         act_tokens_pattern = torch.zeros(self.config.tokens_per_block)
+        task_tokens_pattern = torch.zeros(self.config.tokens_per_block)
         act_tokens_pattern[-1] = 1
-        obs_tokens_pattern = 1 - act_tokens_pattern
+        task_tokens_pattern[-2] = 1
+        obs_tokens_pattern = 1 - act_tokens_pattern - task_tokens_pattern
 
         self.pos_emb = nn.Embedding(config.max_tokens, config.embed_dim)
         print("token pattern ", act_tokens_pattern, obs_tokens_pattern)
         print('max_blocks', config.max_blocks)
         self.embedder = Embedder(
             max_blocks=config.max_blocks,
-            block_masks=[act_tokens_pattern, obs_tokens_pattern],
-            embedding_tables=nn.ModuleList([nn.Embedding(act_vocab_size, config.embed_dim), nn.Embedding(obs_vocab_size, config.embed_dim)])
+            block_masks=[act_tokens_pattern, task_tokens_pattern, obs_tokens_pattern],
+            embedding_tables=nn.ModuleList([nn.Embedding(act_vocab_size, config.embed_dim),nn.Embedding(self.task_vocab_size, config.embed_dim),  nn.Embedding(obs_vocab_size, config.embed_dim)])
         )
+        #
+        # self.task_embedder = Embedder(
+        #     max_blocks=config.max_blocks,
+        #     block_masks=[task_tokens_pattern],
+        #     embedding_tables=nn.ModuleList( [nn.Embedding(self.task_vocab_size, config.embed_dim)])
+        # )
 
         self.head_observations = Head(
             max_blocks=config.max_blocks,
@@ -106,8 +116,8 @@ class WorldModel(nn.Module):
         # tokens = rearrange(torch.cat((obs_tokens,  act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
         tokens = rearrange(torch.cat((obs_tokens, task_tokens, act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
         outputs = self(tokens)
-        labels_observations, labels_rewards, labels_ends = self.compute_labels_world_model(torch.cat((obs_tokens, task_tokens), dim=2), batch['rewards'], batch['ends'], batch['mask_padding'])
-        # labels_observations, labels_rewards, labels_ends = self.compute_labels_world_model(obs_tokens, batch['rewards'], batch['ends'], batch['mask_padding'])
+        # labels_observations, labels_rewards, labels_ends = self.compute_labels_world_model(torch.cat((obs_tokens, task_tokens), dim=2), batch['rewards'], batch['ends'], batch['mask_padding'])
+        labels_observations, labels_rewards, labels_ends = self.compute_labels_world_model(obs_tokens, batch['rewards'], batch['ends'], batch['mask_padding'])
 
         logits_observations = rearrange(outputs.logits_observations[:, :-1], 'b t o -> (b t) o')
 

@@ -47,12 +47,16 @@ class ActorCritic(nn.Module):
         self.conv4 = nn.Conv2d(64, 64, 3, stride=1, padding=1)
         self.maxp4 = nn.MaxPool2d(2, 2)
 
-        self.fc1 = nn.Linear(1,1024)
+        mlp_size = 512
+        self.fc1 = nn.Linear(1, mlp_size)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(1024, 1)
+        self.fc2 = nn.Linear(mlp_size, mlp_size)
+        self.fc3 = nn.Linear(mlp_size, mlp_size)
+        self.fc4 = nn.Linear(mlp_size, 1)
+
 
         self.lstm_dim = 512
-        self.lstm = nn.LSTMCell(1024, self.lstm_dim)
+        self.lstm = nn.LSTMCell(1025, self.lstm_dim)
         self.hx, self.cx = None, None
 
         self.critic_linear = nn.Linear(512, 1)
@@ -85,10 +89,12 @@ class ActorCritic(nn.Module):
         assert 'image' in inputs.keys() and 'token' in inputs.keys() , f"inputs is {inputs}"
         image = inputs['image']
         token = inputs['token']
+        assert token.ndim == 2 and token.shape[-1] == 1, token.shape
         assert image.ndim == 4 and image.shape[1:] == (3, 64, 64)
         assert 0 <= image.min() <= 1 and 0 <= image.max() <= 1
         assert mask_padding is None or (mask_padding.ndim == 1 and mask_padding.size(0) == image.size(0) and mask_padding.any())
         x = image[mask_padding] if mask_padding is not None else image
+        token = token[mask_padding] if mask_padding is not None else token
 
         x = x.mul(2).sub(1)
         x = F.relu(self.maxp1(self.conv1(x)))
@@ -97,6 +103,12 @@ class ActorCritic(nn.Module):
         x = F.relu(self.maxp4(self.conv4(x)))
         x = torch.flatten(x, start_dim=1)
         # print('in ac x_shape is ', x.shape)
+        token = token.to(torch.float32)
+        token = self.relu(self.fc1(token))
+        token = self.relu(self.fc2(token))
+        token = self.relu(self.fc3(token))
+        token = self.relu(self.fc4(token))
+        x = torch.cat((x, token), dim=1)
 
         if mask_padding is None:
             self.hx, self.cx = self.lstm(x, (self.hx, self.cx))
@@ -149,7 +161,7 @@ class ActorCritic(nn.Module):
         all_ends = []
         all_observations = []
 
-        burnin_observations = {'image': torch.clamp(tokenizer.encode_decode(initial_observations[:, :-1], should_preprocess=True, should_postprocess=True), 0, 1) if initial_observations.size(1) > 1 else None ,'token':tokens[:,-1].unsqueeze(1).expand(-1,20) if initial_observations.size(1) > 1 else None}
+        burnin_observations = {'image': torch.clamp(tokenizer.encode_decode(initial_observations[:, :-1], should_preprocess=True, should_postprocess=True), 0, 1) if initial_observations.size(1) > 1 else None ,'token':rearrange( tokens[:,-1].unsqueeze(1).expand(-1,20).unsqueeze(1), "a b c -> a c b") if initial_observations.size(1) > 1 else None}
         self.reset(n=initial_observations.size(0), burnin_observations=burnin_observations, mask_padding=mask_padding[:, :-1])
         obs_img = initial_observations[:, -1]
         obs_tok = batch['observations']['token'][:,-1].unsqueeze(1)

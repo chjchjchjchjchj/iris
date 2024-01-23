@@ -116,7 +116,7 @@ class WorldModelEnv:
     def decode_obs_tokens(self) -> List[Image.Image]:
         # todo get decode the word
         q = self.obs_tokens[:, :-1]
-        print('the word token is ', self.obs_tokens[:, -1])
+        # print('the word token is ', self.obs_tokens[:, -1])
         embedded_tokens = self.tokenizer.embedding(q)     # (B, K, E)
         # embedded_tokens = self.tokenizer.embedding(self.obs_tokens)
         z = rearrange(embedded_tokens, 'b (h w) e -> b e h w', h=int(np.sqrt(self.num_observations_tokens)))

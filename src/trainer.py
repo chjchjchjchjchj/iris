@@ -233,9 +233,11 @@ class Trainer:
         outputs = self.agent.actor_critic.imagine(self._to_device(batch), self.agent.tokenizer, self.agent.world_model, horizon=self.cfg.evaluation.actor_critic.horizon, show_pbar=True)
 
         to_log = []
-        for i, (o, a, r, d) in enumerate(zip(outputs.observations.cpu(), outputs.actions.cpu(), outputs.rewards.cpu(), outputs.ends.long().cpu())):  # Make everything (N, T, ...) instead of (T, N, ...)
-            episode = Episode({'image':o, 'token':torch.zeros_like(d)}, a, r, d, torch.ones_like(d))
-            episode_id = (epoch - 1 - self.cfg.training.actor_critic.start_after_epochs) * outputs.observations.size(0) + i
+        imgs = outputs.observations['image'].cpu()
+        toks = outputs.observations['token'].cpu()
+        for i, (img, tok, a, r, d) in enumerate(zip(imgs,toks, outputs.actions.cpu(), outputs.rewards.cpu(), outputs.ends.long().cpu())):  # Make everything (N, T, ...) instead of (T, N, ...)
+            episode = Episode({'image':img, 'token':tok}, a, r, d, torch.ones_like(d))
+            episode_id = (epoch - 1 - self.cfg.training.actor_critic.start_after_epochs) * outputs.observations['image'].size(0) + i
             self.episode_manager_imagination.save(episode, episode_id, epoch)
 
             metrics_episode = {k: v for k, v in episode.compute_metrics().__dict__.items()}
