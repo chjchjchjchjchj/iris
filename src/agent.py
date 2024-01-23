@@ -35,9 +35,10 @@ class Agent(nn.Module):
         obs is the image
         """
         if isinstance(obs, dict):
-            obs = obs['image']
+            img = obs['image']
         # print('using original obs?', self.actor_critic.use_original_obs)
-        input_ac = obs if self.actor_critic.use_original_obs else torch.clamp(self.tokenizer.encode_decode(obs, should_preprocess=True, should_postprocess=True), 0, 1)
+        img = img if self.actor_critic.use_original_obs else torch.clamp(self.tokenizer.encode_decode(img, should_preprocess=True, should_postprocess=True), 0, 1)
+        input_ac ={'image':img , 'token':obs['token']}
         # print('input_ac shape ', input_ac.shape )
         # print()
         logits_actions = self.actor_critic(input_ac).logits_actions[:, -1] / temperature
