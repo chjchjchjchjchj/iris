@@ -46,6 +46,10 @@ class ActorCritic(nn.Module):
         self.conv4 = nn.Conv2d(64, 64, 3, stride=1, padding=1)
         self.maxp4 = nn.MaxPool2d(2, 2)
 
+        self.fc1 = nn.Linear(1,1024)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(1024, 1)
+
         self.lstm_dim = 512
         self.lstm = nn.LSTMCell(1024, self.lstm_dim)
         self.hx, self.cx = None, None
@@ -64,21 +68,26 @@ class ActorCritic(nn.Module):
         self.hx = torch.zeros(n, self.lstm_dim, device=device)
         self.cx = torch.zeros(n, self.lstm_dim, device=device)
         if burnin_observations is not None:
-            assert burnin_observations.ndim == 5 and burnin_observations.size(0) == n and mask_padding is not None and burnin_observations.shape[:2] == mask_padding.shape
-            for i in range(burnin_observations.size(1)):
+            image = burnin_observations['image']
+            token = burnin_observations['token']
+            assert image.ndim == 5 and image.size(0) == n and mask_padding is not None and image.shape[:2] == mask_padding.shape
+            for i in range(image.size(1)):
                 if mask_padding[:, i].any():
                     with torch.no_grad():
-                        self(burnin_observations[:, i], mask_padding[:, i])
+                        self({'image':image[:, i], 'token':token[:,i]}, mask_padding[:, i])
 
     def prune(self, mask: np.ndarray) -> None:
         self.hx = self.hx[mask]
         self.cx = self.cx[mask]
 
-    def forward(self, inputs: torch.FloatTensor, mask_padding: Optional[torch.BoolTensor] = None) -> ActorCriticOutput:
-        assert inputs.ndim == 4 and inputs.shape[1:] == (3, 64, 64)
-        assert 0 <= inputs.min() <= 1 and 0 <= inputs.max() <= 1
-        assert mask_padding is None or (mask_padding.ndim == 1 and mask_padding.size(0) == inputs.size(0) and mask_padding.any())
-        x = inputs[mask_padding] if mask_padding is not None else inputs
+    def forward(self, inputs: dict, mask_padding: Optional[torch.BoolTensor] = None) -> ActorCriticOutput:
+        assert 'image' in inputs.keys() and 'token' in inputs.keys() , f"inputs is {inputs}"
+        image = inputs['image']
+        token = inputs['token']
+        assert image.ndim == 4 and image.shape[1:] == (3, 64, 64)
+        assert 0 <= image.min() <= 1 and 0 <= image.max() <= 1
+        assert mask_padding is None or (mask_padding.ndim == 1 and mask_padding.size(0) == image.size(0) and mask_padding.any())
+        x = image[mask_padding] if mask_padding is not None else image
 
         x = x.mul(2).sub(1)
         x = F.relu(self.maxp1(self.conv1(x)))
@@ -125,12 +134,13 @@ class ActorCritic(nn.Module):
     def imagine(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, horizon: int, show_pbar: bool = False) -> ImagineOutput:
         assert not self.use_original_obs
         initial_observations = batch['observations']['image']
+        tokens = batch['observations']['token']
         mask_padding = batch['mask_padding']
         assert initial_observations.ndim == 5 and initial_observations.shape[2:] == (3, 64, 64)
         assert mask_padding[:, -1].all()
         device = initial_observations.device
         wm_env = WorldModelEnv(tokenizer, world_model, device)
-
+        # real_env =
         all_actions = []
         all_logits_actions = []
         all_values = []
@@ -138,7 +148,7 @@ class ActorCritic(nn.Module):
         all_ends = []
         all_observations = []
 
-        burnin_observations = torch.clamp(tokenizer.encode_decode(initial_observations[:, :-1], should_preprocess=True, should_postprocess=True), 0, 1) if initial_observations.size(1) > 1 else None
+        burnin_observations = {'image': torch.clamp(tokenizer.encode_decode(initial_observations[:, :-1], should_preprocess=True, should_postprocess=True), 0, 1) if initial_observations.size(1) > 1 else None ,'token':tokens[:,-1].unsqueeze(1).expand(-1,20) if initial_observations.size(1) > 1 else None}
         self.reset(n=initial_observations.size(0), burnin_observations=burnin_observations, mask_padding=mask_padding[:, :-1])
         obs_img = initial_observations[:, -1]
         obs_tok = batch['observations']['token'][:,-1].unsqueeze(1)
@@ -150,7 +160,7 @@ class ActorCritic(nn.Module):
             outputs_ac = self(obs)
             action_token = Categorical(logits=outputs_ac.logits_actions).sample()
             obs, reward, done, _ = wm_env.step(action_token, should_predict_next_obs=(k < horizon - 1))
-
+            # print('show obs token', obs)
             all_actions.append(action_token)
             all_logits_actions.append(outputs_ac.logits_actions)
             all_values.append(outputs_ac.means_values)
