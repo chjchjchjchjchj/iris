@@ -53,7 +53,7 @@ class Collector:
             burnin_obs = {'image': burnin_obs_image, 'token': burnin_obs_token}
             # print("token shape is ", burnin_obs_token.shape)
             # print('token in collector is ', burnin_obs_token)
-            burnin_obs_rec = torch.clamp(agent.tokenizer.encode_decode(burnin_obs, should_preprocess=True, should_postprocess=True), 0, 1)
+            burnin_obs_rec = {'image':torch.clamp(agent.tokenizer.encode_decode(burnin_obs, should_preprocess=True, should_postprocess=True), 0, 1) , 'token':rearrange(burnin_obs_token.unsqueeze(1), 'a b c -> a c b')}
 
         agent.actor_critic.reset(n=self.env.num_envs, burnin_observations=burnin_obs_rec, mask_padding=mask_padding)
         pbar = tqdm(total=num_steps if num_steps is not None else num_episodes, desc=f'Experience collection ({self.dataset.name})', file=sys.stdout)
@@ -66,7 +66,8 @@ class Collector:
             # if info_flag :
                  # print()
             img = rearrange(torch.FloatTensor(self.obs['image']).div(255), 'n h w c -> n c h w').to(agent.device)
-            obs = {'image':img, 'token':self.obs['token']}
+            token = torch.LongTensor(self.obs['token']).unsqueeze(-1).to(agent.device)
+            obs = {'image':img, 'token':token}
             act = agent.act(obs, should_sample=should_sample, temperature=temperature).cpu().numpy()
 
             if random.random() < epsilon:
