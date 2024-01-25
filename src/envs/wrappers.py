@@ -9,7 +9,22 @@ import numpy as np
 from PIL import Image
 import homegrid
 
-
+tasks_dict = {'find the bottle': 0, 'move the papers to the dining room': 1, 'open the recycling bin': 2,
+              'find the recycling bin': 3, 'find the papers': 4, 'get the papers': 5,
+              'move the bottle to the dining room': 6, 'open the trash bin': 7,
+              'put the papers in the trash bin': 8, 'get the plates': 9, 'move the bottle to the kitchen': 10,
+              'move the papers to the living room': 11, 'put the fruit in the compost bin': 12,
+              'get the fruit': 13, 'move the plates to the kitchen': 14, 'find the fruit': 15,
+              'get the bottle': 16, 'find the compost bin': 17, 'move the fruit to the dining room': 18,
+              'move the papers to the kitchen': 19, 'put the plates in the recycling bin': 20,
+              'find the plates': 21, 'put the bottle in the compost bin': 22, 'open the compost bin': 23,
+              'move the bottle to the living room': 24, 'put the fruit in the trash bin': 25,
+              'put the bottle in the trash bin': 26, 'put the papers in the compost bin': 27,
+              'put the plates in the compost bin': 28, 'move the plates to the living room': 29,
+              'move the plates to the dining room': 30, 'move the fruit to the kitchen': 31,
+              'find the trash bin': 32, 'put the papers in the recycling bin': 33,
+              'put the bottle in the recycling bin': 34, 'put the fruit in the recycling bin': 35,
+              'put the plates in the trash bin': 36}
 def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, done_on_life_loss=False, clip_reward=False):
     # print('id', id)
     if id == "homegrid-task":
@@ -57,14 +72,18 @@ class ResizeObsWrapper(gym.ObservationWrapper):
         # print('---- used observation')
         # using key to get the image
         # print('observation token in wrapper ', observation['token'])
-        tok = observation['token']
-        if tok in self.latent_dict.keys():
-            tok = self.latent_dict[tok]
+
+
+        tmp = observation['log_language_info']
+        if tmp in tasks_dict.keys():
+            tok = tasks_dict[tmp]
+            self.history_id = tok
         else:
-            self.latent_dict[tok] = self.hist_cnt
-            self.hist_cnt +=1
-            tok = self.latent_dict[tok]
-            print('update the tok ', self.latent_dict)
+            tok = self.history_id
+
+        if tok == None:
+            tok = 38 # no task
+        print(tok)
         return {'image': self.resize(observation), 'token':tok}
         # return self.resize(observation)
 
