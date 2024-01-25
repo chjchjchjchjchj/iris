@@ -27,8 +27,31 @@ tasks_dict = {'find the bottle': 0, 'move the papers to the dining room': 1, 'op
               'put the plates in the trash bin': 36}
 def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, done_on_life_loss=False, clip_reward=False):
     # print('id', id)
+    from gym.envs.registration import register
+
+    sym = {'step': 0, 'agent': {'pos': (5, 9), 'room': 'K', 'dir': 1, 'carrying': None}, 'objects': [
+        {'name': 'recycling bin', 'type': 'Storage', 'pos': (12, 10), 'room': 'D', 'state': 'open', 'action': 'lift',
+         'invisible': None, 'contains': []},
+        {'name': 'trash bin', 'type': 'Storage', 'pos': (11, 1), 'room': 'L', 'state': 'closed', 'action': 'lift',
+         'invisible': None, 'contains': []},
+        {'name': 'fruit', 'type': 'Pickable', 'pos': (8, 2), 'room': 'L', 'state': None, 'action': None,
+         'invisible': False, 'contains': None},
+        {'name': 'bottle', 'type': 'Pickable', 'pos': (12, 2), 'room': 'L', 'state': None, 'action': None,
+         'invisible': False, 'contains': None}], 'front_obj': None, 'unsafe': {'name': None, 'poss': {}, 'end': -1}}
+
+    register(
+        id="homegrid-fix",
+        entry_point="homegrid:HomeGrid",
+        kwargs={"lang_types": ["task"],
+                'fixed_state': sym},
+    )
+
     if id == "homegrid-task":
         env = gym.make(id)
+    elif id == "homegrid-fix":
+        print(id)
+        env = gym.make(id)
+
     else:
         env = gym.make(id)
     # print('using env in make_atari', id)
