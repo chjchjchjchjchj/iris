@@ -22,7 +22,12 @@ from make_reconstructions import make_reconstructions_from_batch
 from models.actor_critic import ActorCritic
 from models.world_model import WorldModel
 from utils import configure_optimizer, EpisodeDirManager, set_seed
+sys.path.append("/home/chengdong/haojun/iris_xianhao/iris")
+from LLaVA.llava.model.builder import load_pretrained_model
+from LLaVA.llava.mm_utils import get_model_name_from_path
+from LLaVA.llava.eval.my_run_llava import eval_model
 
+import ipdb
 
 class Trainer:
     def __init__(self, cfg: DictConfig) -> None:
@@ -35,7 +40,7 @@ class Trainer:
 
         if cfg.common.seed is not None:
             set_seed(cfg.common.seed)
-
+        # ipdb.set_trace()
         self.cfg = cfg
         self.start_epoch = 1
         self.device = torch.device(cfg.common.device)
@@ -99,15 +104,42 @@ class Trainer:
 
         if cfg.common.resume:
             self.load_checkpoint()
+        
+        self.llava_model_name = get_model_name_from_path(cfg.llava.model_path)
+        self.llava_tokenizer, self.llava_model, self.llava_image_processor, self.llava_context_len = load_pretrained_model(
+            model_path=cfg.llava.model_path, model_base=None, model_name=self.llava_model_name
+        )
+        self.cfg = cfg
+
+    
+    def get_goal_from_llava(self, prompt, image_tensor):
+        """
+        image_tensor.shape=torch.Size([3, ..., ...])
+        """
+        args = type('Args', (), {
+            "model_path": self.cfg.llava.model_path,
+            "model_base": self.cfg.llava.model_base,
+            "model_name": self.llava_model_name,
+            "query": prompt,
+            "conv_mode": self.cfg.llava.conv_mode,
+            "image_file": None,
+            "sep": ",",
+            "temperature": self.cfg.llava.temperature,
+            "top_p": self.cfg.llava.top_p,
+            "num_beams": self.cfg.llava.num_beams,
+            "max_new_tokens": self.cfg.llava.max_new_tokens
+        })()
+        output = eval_model(args, self.llava_model_name, self.llava_tokenizer, self.llava_model, self.llava_image_processor, self.llava_context_len, image_tensor)
+        return output
+
 
     def run(self) -> None:
 
         for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
-
             print(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
             start_time = time.time()
             to_log = []
-
+            # ipdb.set_trace()
             if self.cfg.training.should:
                 if epoch <= self.cfg.collection.train.stop_after_epochs:
                     to_log += self.train_collector.collect(self.agent, epoch, **self.cfg.collection.train.config)
